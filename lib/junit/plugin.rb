@@ -1,5 +1,3 @@
-require_relative 'stub'
-
 module Danger
   # Report, or inspect any JUnit XML formatted test suite report.
   #
