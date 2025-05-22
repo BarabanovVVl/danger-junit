@@ -1,0 +1,21 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<testsuites tests='10' failures='1' skipped='0' time='20.0' name='SimpleTests'>
+    <testsuite name='MainTestSuite' time='20.0' tests='10' failures='1' skipped='0'>
+        <testsuite name='NestedTestSuite1' time='10.0' tests='5' failures='1' skipped='0'>
+            <testcase name='test_passing1' classname='SimpleTests.NestedTestSuite1' time='1.0'/>
+            <testcase name='test_passing2' classname='SimpleTests.NestedTestSuite1' time='1.0'/>
+            <testcase name='test_failing' classname='SimpleTests.NestedTestSuite1' time='2.0'>
+                <failure message='Test failure message'/>
+            </testcase>
+            <testcase name='test_passing3' classname='SimpleTests.NestedTestSuite1' time='3.0'/>
+            <testcase name='test_passing4' classname='SimpleTests.NestedTestSuite1' time='3.0'/>
+        </testsuite>
+        <testsuite name='NestedTestSuite2' time='10.0' tests='5' failures='0' skipped='0'>
+            <testcase name='test_passing5' classname='SimpleTests.NestedTestSuite2' time='2.0'/>
+            <testcase name='test_passing6' classname='SimpleTests.NestedTestSuite2' time='2.0'/>
+            <testcase name='test_passing7' classname='SimpleTests.NestedTestSuite2' time='2.0'/>
+            <testcase name='test_passing8' classname='SimpleTests.NestedTestSuite2' time='2.0'/>
+            <testcase name='test_passing9' classname='SimpleTests.NestedTestSuite2' time='2.0'/>
+        </testsuite>
+    </testsuite>
+</testsuites>

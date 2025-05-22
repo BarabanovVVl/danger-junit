@@ -1,3 +1,5 @@
+require_relative 'stub'
+
 module Danger
   # Report, or inspect any JUnit XML formatted test suite report.
   #
@@ -53,52 +55,7 @@ module Danger
   # @see  danger/danger
   # @see  artsy/eigen
   # @tags testing, reporting, junit, rspec, jasmine, jest, xcpretty
-  #
   class DangerJunit < Plugin
-    # All the tests for introspection
-    #
-    # @return   [Array<Ox::Element>]
-    attr_accessor :tests
-
-    # An array of XML elements that represent passed tests.
-    #
-    # @return   [Array<Ox::Element>]
-    attr_accessor :passes
-
-    # An array of XML elements that represent failed tests.
-    #
-    # @return   [Array<Ox::Element>]
-    attr_accessor :failures
-
-    # An array of XML elements that represent passed tests.
-    #
-    # @return   [Array<Ox::Element>]
-    attr_accessor :errors
-
-    # An array of XML elements that represent skipped tests.
-    #
-    # @return   [Array<Ox::Element>]
-    attr_accessor :skipped
-
-    # An attribute to make the plugin show a warning on skipped tests.
-    #
-    # @return   [Bool]
-    attr_accessor :show_skipped_tests
-
-    # An array of symbols that become the columns of your tests,
-    # if `nil`, the default, it will be all of the attributes for a single parse
-    # or all of the common attributes between multiple files
-    #
-    # @return   [Array<Symbol>]
-    attr_accessor :headers
-
-    # An array of symbols that become the columns of your skipped tests,
-    # if `nil`, the default, it will be all of the attributes for a single parse
-    # or all of the common attributes between multiple files
-    #
-    # @return   [Array<Symbol>]
-    attr_accessor :skipped_headers
-
     # Parses an XML file, which fills all the attributes,
     # will `raise` for errors
     # @return   [void]
@@ -114,38 +71,34 @@ module Danger
       @tests = []
       failed_tests = []
 
-      Array(files).flatten.each do |file|
+      files.flatten.each do |file|
         raise "No JUnit file was found at #{file}" unless File.exist? file
 
         xml_string = File.read(file)
         doc = Ox.parse(xml_string)
 
         suite_root = doc.nodes.first.value == 'testsuites' ? doc.nodes.first : doc
-        @tests += suite_root.nodes.map(&:nodes).flatten.select { |node| node.kind_of?(Ox::Element) && node.value == 'testcase' }
+        @tests += find_testcases(suite_root)
 
-        failed_suites = suite_root.nodes.select { |suite| suite[:failures].to_i > 0 || suite[:errors].to_i > 0 }
-        failed_tests += failed_suites.map(&:nodes).flatten.select { |node| node.kind_of?(Ox::Element) && node.value == 'testcase' }
+        failed_suites = find_testsuites(suite_root).select do |suite|
+          suite[:failures].to_i > 0 || suite[:errors].to_i > 0
+        end
+
+        failed_suites.each do |suite|
+          failed_tests += find_testcases(suite)
+        end
       end
 
       @failures = failed_tests.select do |test|
-        test.nodes.count > 0
-      end.select do |test|
-        node = test.nodes.first
-        node.kind_of?(Ox::Element) && node.value == 'failure'
+        test.nodes.count > 0 && test.nodes.first.kind_of?(Ox::Element) && test.nodes.first.value == 'failure'
       end
 
-      @errors = failed_tests.select do |test| 
-        test.nodes.count > 0
-      end.select do |test| 
-        node = test.nodes.first
-        node.kind_of?(Ox::Element) && node.value == 'error'
+      @errors = failed_tests.select do |test|
+        test.nodes.count > 0 && test.nodes.first.kind_of?(Ox::Element) && test.nodes.first.value == 'error'
       end
 
-      @skipped = tests.select do |test| 
-        test.nodes.count > 0
-      end.select do |test| 
-        node = test.nodes.first
-        node.kind_of?(Ox::Element) && node.value == 'skipped'
+      @skipped = @tests.select do |test|
+        test.nodes.count > 0 && test.nodes.first.kind_of?(Ox::Element) && test.nodes.first.value == 'skipped'
       end
 
       @passes = tests - @failures - @errors - @skipped
@@ -172,6 +125,7 @@ module Danger
         message = "### Tests: \n\n"
         tests = (failures + errors)
         message << get_report_content(tests, headers)
+
         markdown message
       end
     end
@@ -201,6 +155,33 @@ module Danger
         message << row_values.join(' | ') + "|\n"
       end
       message
+    end
+
+    def find_testcases(node)
+      results = []
+      if node.value == 'testcase'
+        results << node
+      else
+        node.nodes.each do |child|
+          if child.kind_of?(Ox::Element)
+            results.concat(find_testcases(child))
+          end
+        end
+      end
+      results
+    end
+
+    def find_testsuites(node)
+      suites = []
+      if node.value == 'testsuite' || node.value == 'testsuites'
+        suites << node
+      end
+      node.nodes.each do |child|
+        if child.kind_of?(Ox::Element)
+          suites.concat(find_testsuites(child))
+        end
+      end
+      suites
     end
 
     def auto_link(value)

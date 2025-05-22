@@ -1,6 +1,7 @@
-require File.expand_path('../spec_helper', __FILE__)
+# frozen_string_literal: true
 
-#
+require File.expand_path('spec_helper', __dir__)
+
 module Danger
   describe Danger::DangerJunit do
     it 'should be a plugin' do
@@ -36,6 +37,15 @@ module Danger
 
         expect(@junit.failures.count).to eq 1
         expect(@junit.passes.count).to eq 1
+        expect(@junit.errors.count).to eq 0
+        expect(@junit.skipped.count).to eq 0
+      end
+
+      it 'gets the right results for trainer nested arch generated files' do
+        @junit.parse 'spec/fixtures/fastlane_nested.xml'
+
+        expect(@junit.failures.count).to eq 1
+        expect(@junit.passes.count).to eq 9
         expect(@junit.errors.count).to eq 0
         expect(@junit.skipped.count).to eq 0
       end
@@ -78,7 +88,9 @@ module Danger
       end
 
       it 'links paths that are files' do
-        allow(@dangerfile.github).to receive(:pr_json).and_return('head' => { 'repo' => { 'html_url' => 'https://github.com/thing/thingy' } })
+        allow(@dangerfile.github)
+          .to receive(:pr_json)
+          .and_return('head' => { 'repo' => { 'html_url' => 'https://github.com/thing/thingy' } })
         allow(@dangerfile.github).to receive(:head_commit).and_return('hello')
 
         @junit.parse 'spec/fixtures/danger-junit-fail.xml'
@@ -99,7 +111,7 @@ module Danger
         end
 
         it 'gets the right results for an array of files' do
-          files = %w(spec/fixtures/rspec_fail.xml spec/fixtures/fastlane_trainer.xml)
+          files = %w[spec/fixtures/rspec_fail.xml spec/fixtures/fastlane_trainer.xml]
           @junit.parse_files files
 
           expect(@junit.failures.count).to eq 1 + 1
